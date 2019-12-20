@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"github.com/gocolly/colly"
 	"net/http"
-	
 )
 
 func main() {
