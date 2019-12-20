@@ -6,12 +6,19 @@ import (
 	"crypto/tls"
 	"github.com/gocolly/colly"
 	"net/http"
+
+	utils "github.com/devopsext/utils"
 )
+
+var VERSION = "unknown"
+
+var log = utils.GetLog()
+var env = utils.GetEnvironment()
 
 func main() {
 	// Instantiate default collector
 	c := colly.NewCollector(
-		// MaxDepth is 1, so only  the  links on  the scraped page
+		// MaxDepth is 1,  so only  the  links on  the scraped page
 		// is visited, and no further links are followed
 		colly.MaxDepth(-1),
 	)
@@ -20,7 +27,7 @@ func main() {
 	c.AllowedDomains = []string{"www.exness-168.com"}
 	c.RedirectHandler = func(req *http.Request, via []*http.Request) error {
 
-		fmt.Println("url: ", via[0].URL.String())
+		log.Info("url: ", via[0].URL.String())
 		fmt.Println("response: ", req.Response.StatusCode)
 		return nil
 	}
@@ -29,7 +36,7 @@ func main() {
 
 	c.OnResponse(func(response *colly.Response) {
 
-		fmt.Println("url: ", response.Request.URL.String())
+		log.Info("url: ", response.Request.URL.String())
 		fmt.Println("response: ", response.StatusCode)
 
 	})
