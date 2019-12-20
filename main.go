@@ -18,7 +18,7 @@ var env = utils.GetEnvironment()
 func main() {
 	// Instantiate default collector
 	c := colly.NewCollector(
-		// MaxDepth is 1,  so only  the  links on  the scraped page
+		// MaxDepth  is 1,  so only  the  links on  the scraped page
 		// is visited, and no further links are followed
 		colly.MaxDepth(-1),
 	)
