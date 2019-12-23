@@ -8,4 +8,5 @@ type WebsiteOptions struct {
 	Silent    bool
 	Redirects bool
 	Domains   []string
+	Output    string
 }

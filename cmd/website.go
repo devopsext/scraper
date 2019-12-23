@@ -19,6 +19,7 @@ var websiteOpts = common.WebsiteOptions{
 	Silent:    websiteEnv.Get("SCRAPER_WEBSITE_SILENT", false).(bool),
 	Redirects: websiteEnv.Get("SCRAPER_WEBSITE_REDIRECTS", false).(bool),
 	Domains:   strings.Split(websiteEnv.Get("SCRAPER_WEBSITE_DOMAINS", "ya.ru").(string), ","),
+	Output:    websiteEnv.Get("SCRAPER_WEBSITE_OUTPUT", "json").(string),
 }
 
 func GetWebsiteCmd() *cobra.Command {
@@ -45,6 +46,7 @@ func GetWebsiteCmd() *cobra.Command {
 
 	flags.BoolVar(&websiteOpts.Redirects, "redirects", websiteOpts.Redirects, "Website follow redirects")
 	flags.StringSliceVar(&websiteOpts.Domains, "domains", websiteOpts.Domains, "Website domains")
+	flags.StringVar(&websiteOpts.Output, "url", websiteOpts.Output, "Website output")
 
 	return &rootCmd
 }
