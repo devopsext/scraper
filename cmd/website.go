@@ -15,11 +15,14 @@ var websiteLog = utils.GetLog()
 
 var websiteOpts = common.WebsiteOptions{
 
-	Url:       websiteEnv.Get("SCRAPER_WEBSITE_URL", "").(string),
+	URL:       websiteEnv.Get("SCRAPER_WEBSITE_URL", "").(string),
 	Silent:    websiteEnv.Get("SCRAPER_WEBSITE_SILENT", false).(bool),
 	Redirects: websiteEnv.Get("SCRAPER_WEBSITE_REDIRECTS", false).(bool),
 	Domains:   strings.Split(websiteEnv.Get("SCRAPER_WEBSITE_DOMAINS", "ya.ru").(string), ","),
 	Output:    websiteEnv.Get("SCRAPER_WEBSITE_OUTPUT", "json").(string),
+	MaxDepth:  websiteEnv.Get("SCRAPER_WEBSITE_MAX_DEPTH", 1).(int),
+	UserAgent: websiteEnv.Get("SCRAPER_WEBSITE_USER_AGENT", "").(string),
+	Insecure:  websiteEnv.Get("SCRAPER_WEBSITE_INSECURE", false).(bool),
 }
 
 func GetWebsiteCmd() *cobra.Command {
@@ -34,19 +37,20 @@ func GetWebsiteCmd() *cobra.Command {
 				websiteLog.Panic("Website scanner is invalid. Terminating...")
 			}
 
+			scanner.Start()
 		},
 	}
 
 	flags := rootCmd.PersistentFlags()
 
-	flags.StringVar(&websiteOpts.Url, "url", websiteOpts.Url, "Website url")
+	flags.StringVar(&websiteOpts.URL, "url", websiteOpts.URL, "Website url")
 	flags.BoolVar(&websiteOpts.Silent, "silent", websiteOpts.Silent, "Website silency")
-
-	//flags.
-
 	flags.BoolVar(&websiteOpts.Redirects, "redirects", websiteOpts.Redirects, "Website follow redirects")
 	flags.StringSliceVar(&websiteOpts.Domains, "domains", websiteOpts.Domains, "Website domains")
-	flags.StringVar(&websiteOpts.Output, "url", websiteOpts.Output, "Website output")
+	flags.StringVar(&websiteOpts.Output, "output", websiteOpts.Output, "Website output")
+	flags.IntVar(&websiteOpts.MaxDepth, "max-depth", websiteOpts.MaxDepth, "Website max depth")
+	flags.StringVar(&websiteOpts.UserAgent, "user-agent", websiteOpts.UserAgent, "Website user agent")
+	flags.BoolVar(&websiteOpts.Insecure, "insecure", websiteOpts.Insecure, "Website insecure skip verify")
 
 	return &rootCmd
 }

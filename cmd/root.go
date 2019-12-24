@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/devopsext/utils"
@@ -54,10 +53,6 @@ func Execute() {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			rootLog.Info("Booting...")
-
-			var wg sync.WaitGroup
-
-			wg.Wait()
 		},
 	}
 
