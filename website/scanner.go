@@ -64,6 +64,7 @@ func (ws *WebsiteScanner) Start() {
 		c.AllowedDomains = []string{ws.options.URL}
 	}
 	c.AllowURLRevisit = false
+	c.MaxBodySize = ws.options.MaxBodySize
 
 	if !utils.IsEmpty(ws.options.UserAgent) {
 		c.UserAgent = ws.options.UserAgent
@@ -136,23 +137,33 @@ func (ws *WebsiteScanner) Start() {
 		scannerLog.Debug("response => %d", response.StatusCode)
 	})
 
-	c.RedirectHandler = func(req *http.Request, via []*http.Request) error {
+	if ws.options.Redirects {
 
-		if current != nil {
-			current.Time.Download = time.Since(firstByte)
-			current.StatusCode = req.Response.StatusCode
+		c.RedirectHandler = func(req *http.Request, via []*http.Request) error {
 
-			if current.Parent != nil {
-				current.Parent.Children = append(current.Parent.Children, current)
+			if current != nil {
+				current.Time.Download = time.Since(firstByte)
+				current.StatusCode = req.Response.StatusCode
+
+				if current.Parent != nil {
+					current.Parent.Children = append(current.Parent.Children, current)
+				}
 			}
 
-		}
+			l := len(via)
+			if l > 0 {
+				scannerLog.Debug("response => %d to %s", req.Response.StatusCode, via[l-1].URL.String())
 
-		l := len(via)
-		if l > 0 {
-			scannerLog.Debug("response => %d to %s", req.Response.StatusCode, via[l-1].URL.String())
+				next := &WebsitePage{
+					URL:    via[l-1].URL,
+					Parent: current,
+				}
+				current.Children = append(current.Children, next)
+				current = next
+			}
+
+			return nil
 		}
-		return nil
 	}
 
 	skipErrors := []interface{}{colly.ErrAlreadyVisited, colly.ErrMaxDepth}

@@ -15,14 +15,15 @@ var websiteLog = utils.GetLog()
 
 var websiteOpts = common.WebsiteOptions{
 
-	URL:       websiteEnv.Get("SCRAPER_WEBSITE_URL", "").(string),
-	Silent:    websiteEnv.Get("SCRAPER_WEBSITE_SILENT", false).(bool),
-	Redirects: websiteEnv.Get("SCRAPER_WEBSITE_REDIRECTS", false).(bool),
-	Domains:   strings.Split(websiteEnv.Get("SCRAPER_WEBSITE_DOMAINS", "ya.ru").(string), ","),
-	Output:    websiteEnv.Get("SCRAPER_WEBSITE_OUTPUT", "json").(string),
-	MaxDepth:  websiteEnv.Get("SCRAPER_WEBSITE_MAX_DEPTH", 1).(int),
-	UserAgent: websiteEnv.Get("SCRAPER_WEBSITE_USER_AGENT", "").(string),
-	Insecure:  websiteEnv.Get("SCRAPER_WEBSITE_INSECURE", false).(bool),
+	URL:         websiteEnv.Get("SCRAPER_WEBSITE_URL", "").(string),
+	Silent:      websiteEnv.Get("SCRAPER_WEBSITE_SILENT", false).(bool),
+	Redirects:   websiteEnv.Get("SCRAPER_WEBSITE_REDIRECTS", false).(bool),
+	Domains:     strings.Split(websiteEnv.Get("SCRAPER_WEBSITE_DOMAINS", "ya.ru").(string), ","),
+	Output:      websiteEnv.Get("SCRAPER_WEBSITE_OUTPUT", "json").(string),
+	MaxDepth:    websiteEnv.Get("SCRAPER_WEBSITE_MAX_DEPTH", 1).(int),
+	UserAgent:   websiteEnv.Get("SCRAPER_WEBSITE_USER_AGENT", "").(string),
+	Insecure:    websiteEnv.Get("SCRAPER_WEBSITE_INSECURE", false).(bool),
+	MaxBodySize: websiteEnv.Get("SCRAPER_WEBSITE_MAX_BODY_SIZE", 10*1024*1024).(int),
 }
 
 func GetWebsiteCmd() *cobra.Command {
@@ -51,6 +52,7 @@ func GetWebsiteCmd() *cobra.Command {
 	flags.IntVar(&websiteOpts.MaxDepth, "max-depth", websiteOpts.MaxDepth, "Website max depth")
 	flags.StringVar(&websiteOpts.UserAgent, "user-agent", websiteOpts.UserAgent, "Website user agent")
 	flags.BoolVar(&websiteOpts.Insecure, "insecure", websiteOpts.Insecure, "Website insecure skip verify")
+	flags.IntVar(&websiteOpts.MaxBodySize, "max-body-size", websiteOpts.MaxBodySize, "Website max body size")
 
 	return &rootCmd
 }
