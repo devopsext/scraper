@@ -2,47 +2,51 @@ package website
 
 import (
 	"crypto/tls"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptrace"
+	"strings"
 	"time"
 
 	"github.com/devopsext/colly"
 	"github.com/devopsext/scraper/common"
 	"github.com/devopsext/utils"
+
+	"github.com/go-yaml/yaml"
 )
 
 var scannerLog = utils.GetLog()
 
+type pageDepth struct {
+	depth int
+	page  *WebsitePage
+}
+
 type WebsiteScanner struct {
-	page    *WebsitePage
-	options common.WebsiteOptions
+	pageDepths map[uint32]pageDepth
+	page       *WebsitePage
+	options    common.WebsiteOptions
 }
 
-func (ws *WebsiteScanner) findPage(parent *WebsitePage, url string, depth int, level int) *WebsitePage {
+func (ws *WebsiteScanner) getParentByRequest(r *colly.Request) *WebsitePage {
 
-	if parent == nil {
-		return nil
-	}
+	ID := r.ID - 1
+	for {
 
-	for _, item := range parent.Children {
-
-		if level == depth {
-			return item
+		pageDepth, ok := ws.pageDepths[ID]
+		if ok {
+			if pageDepth.depth < r.Depth {
+				return pageDepth.page
+			}
 		} else {
-			return ws.findPage(item, url, depth, level+1)
+			if ID < 1 {
+				return nil
+			}
 		}
+
+		ID--
 	}
-
-	return nil
-}
-
-func (ws *WebsiteScanner) findParentByURL(url string, depth int) *WebsitePage {
-
-	if ws.page != nil {
-
-		return ws.findPage(ws.page, url, depth, 0)
-	}
-	return nil
 }
 
 func (ws *WebsiteScanner) Start() {
@@ -110,13 +114,14 @@ func (ws *WebsiteScanner) Start() {
 
 		start = time.Now()
 
-		parent := ws.findParentByURL(r.URL.String(), r.Depth)
+		parent := ws.getParentByRequest(r)
+
 		current = &WebsitePage{
-			URL:    r.URL,
+			URL:    r.URL.String(),
 			Parent: parent,
 		}
 
-		if ws.page == nil && parent == nil {
+		if ws.page == nil {
 			ws.page = current
 		}
 
@@ -132,9 +137,16 @@ func (ws *WebsiteScanner) Start() {
 			if current.Parent != nil {
 				current.Parent.Children = append(current.Parent.Children, current)
 			}
+
+			ws.pageDepths[response.Request.ID] = pageDepth{
+				depth: response.Request.Depth,
+				page:  current,
+			}
+
 		}
 
-		scannerLog.Debug("response => %d", response.StatusCode)
+		//scannerLog.Debug("response %d: %s", response.StatusCode, string(response.Body[:]))
+		scannerLog.Debug("response %d", response.StatusCode)
 	})
 
 	if ws.options.Redirects {
@@ -150,23 +162,19 @@ func (ws *WebsiteScanner) Start() {
 				}
 			}
 
-			l := len(via)
-			if l > 0 {
-				scannerLog.Debug("response => %d to %s", req.Response.StatusCode, via[l-1].URL.String())
+			scannerLog.Debug("response => %d to %s", req.Response.StatusCode, req.URL.String())
 
-				next := &WebsitePage{
-					URL:    via[l-1].URL,
-					Parent: current,
-				}
-				current.Children = append(current.Children, next)
-				current = next
+			next := &WebsitePage{
+				URL:    req.URL.String(),
+				Parent: current,
 			}
+			current = next
 
 			return nil
 		}
 	}
 
-	skipErrors := []interface{}{colly.ErrAlreadyVisited, colly.ErrMaxDepth}
+	skipErrors := []interface{}{colly.ErrAlreadyVisited, colly.ErrMaxDepth, colly.ErrMissingURL}
 
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 
@@ -174,16 +182,23 @@ func (ws *WebsiteScanner) Start() {
 
 		scannerLog.Debug("link: %s", link)
 
+		needToVisit := true
+
 		if current != nil {
-			current.Links = append(current.Links, link)
+			needToVisit = !utils.Contains(current.Links, link)
+			if needToVisit {
+				current.Links = append(current.Links, link)
+			}
 		}
 
-		if err := e.Request.Visit(link); err != nil {
+		if needToVisit {
+			if err := e.Request.Visit(link); err != nil {
 
-			if err == colly.ErrAlreadyVisited {
-				scannerLog.Debug("already visited")
-			} else if !utils.Contains(skipErrors, err) {
-				scannerLog.Error(err)
+				if err == colly.ErrAlreadyVisited {
+					scannerLog.Debug("already visited")
+				} else if !utils.Contains(skipErrors, err) {
+					//scannerLog.Error(err)
+				}
 			}
 		}
 	})
@@ -193,19 +208,39 @@ func (ws *WebsiteScanner) Start() {
 	})
 
 	c.OnScraped(func(r *colly.Response) {
-		if ws.page != nil {
 
-		}
 	})
 
 	if err := c.Visit(ws.options.URL); err != nil {
 		scannerLog.Error(err)
+	} else {
+		if ws.page != nil {
+
+			output := strings.ToLower(ws.options.Output)
+			if output == "json" {
+
+				b, err := json.Marshal(ws.page)
+				if err != nil {
+					scannerLog.Error(err)
+				}
+				fmt.Println(string(b))
+
+			} else if output == "yaml" {
+
+				b, err := yaml.Marshal(ws.page)
+				if err != nil {
+					scannerLog.Error(err)
+				}
+				fmt.Println(string(b))
+			}
+		}
 	}
 }
 
 func NewWebsiteScanner(options common.WebsiteOptions) *WebsiteScanner {
 
 	return &WebsiteScanner{
-		options: options,
+		pageDepths: make(map[uint32]pageDepth),
+		options:    options,
 	}
 }

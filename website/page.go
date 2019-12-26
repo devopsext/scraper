@@ -1,7 +1,6 @@
 package website
 
 import (
-	"net/url"
 	"time"
 )
 
@@ -14,10 +13,10 @@ type WebsitePageTime struct {
 }
 
 type WebsitePage struct {
-	URL        *url.URL
+	URL        string
 	Time       WebsitePageTime
 	StatusCode int
-	Parent     *WebsitePage
+	Parent     *WebsitePage `json:"-" yaml:"-"`
 	Links      []string
 	Children   []*WebsitePage
 }
