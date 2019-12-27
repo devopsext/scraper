@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/devopsext/colly"
+	"github.com/gocolly/colly"
 	"github.com/devopsext/scraper/common"
 	"github.com/devopsext/utils"
 
