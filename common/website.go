@@ -14,4 +14,6 @@ type WebsiteOptions struct {
 	UserAgent   string
 	Insecure    bool
 	MaxBodySize int
+	Browser     string
+	File        string
 }

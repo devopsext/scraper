@@ -24,6 +24,8 @@ var websiteOpts = common.WebsiteOptions{
 	UserAgent:   websiteEnv.Get("SCRAPER_WEBSITE_USER_AGENT", "").(string),
 	Insecure:    websiteEnv.Get("SCRAPER_WEBSITE_INSECURE", false).(bool),
 	MaxBodySize: websiteEnv.Get("SCRAPER_WEBSITE_MAX_BODY_SIZE", 10*1024*1024).(int),
+	Browser:     websiteEnv.Get("SCRAPER_WEBSITE_BROWSER", "").(string),
+	File:        websiteEnv.Get("SCRAPER_WEBSITE_FILE", "").(string),
 }
 
 func GetWebsiteCmd() *cobra.Command {
@@ -48,11 +50,13 @@ func GetWebsiteCmd() *cobra.Command {
 	flags.BoolVar(&websiteOpts.Silent, "silent", websiteOpts.Silent, "Website silency")
 	flags.BoolVar(&websiteOpts.Redirects, "redirects", websiteOpts.Redirects, "Website follow redirects")
 	flags.StringSliceVar(&websiteOpts.Domains, "domains", websiteOpts.Domains, "Website domains")
-	flags.StringVar(&websiteOpts.Output, "output", websiteOpts.Output, "Website output")
+	flags.StringVar(&websiteOpts.Output, "output", websiteOpts.Output, "Website output: json, yaml")
 	flags.IntVar(&websiteOpts.MaxDepth, "max-depth", websiteOpts.MaxDepth, "Website max depth")
 	flags.StringVar(&websiteOpts.UserAgent, "user-agent", websiteOpts.UserAgent, "Website user agent")
 	flags.BoolVar(&websiteOpts.Insecure, "insecure", websiteOpts.Insecure, "Website insecure skip verify")
 	flags.IntVar(&websiteOpts.MaxBodySize, "max-body-size", websiteOpts.MaxBodySize, "Website max body size")
+	flags.StringVar(&websiteOpts.Browser, "browser", websiteOpts.Browser, "Website browser: chrome")
+	flags.StringVar(&websiteOpts.File, "file", websiteOpts.File, "Website output file")
 
 	return &rootCmd
 }
