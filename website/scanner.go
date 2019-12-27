@@ -16,7 +16,7 @@ import (
 	"github.com/devopsext/utils"
 
 	"github.com/chromedp/chromedp"
-	"github.com/go-yaml/yaml"
+	"gopkg.in/yaml.v2"
 )
 
 var scannerLog = utils.GetLog()
