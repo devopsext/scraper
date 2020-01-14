@@ -8,12 +8,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
+	"net/url"
 	"strings"
 	"time"
 
-	"github.com/gocolly/colly"
 	"github.com/devopsext/scraper/common"
 	"github.com/devopsext/utils"
+	"github.com/gocolly/colly"
 
 	"github.com/chromedp/chromedp"
 	"gopkg.in/yaml.v2"
@@ -33,7 +34,8 @@ type WebsiteScanner struct {
 }
 
 type WebsiteScannerResult struct {
-	Root *WebsitePage
+	Root        *WebsitePage
+	StatusCodes map[int]int
 }
 
 func resultToJson(r WebsiteScannerResult) []byte {
@@ -87,6 +89,15 @@ func (ws *WebsiteScanner) getParentByRequest(r *colly.Request) *WebsitePage {
 	}
 }
 
+func (ws *WebsiteScanner) getDomain(s string) string {
+
+	u, err := url.Parse(s)
+	if err != nil {
+		return s
+	}
+	return u.Host
+}
+
 func (ws *WebsiteScanner) Start() {
 
 	var start, connect, dns, tlsHandshake, firstByte time.Time
@@ -102,9 +113,12 @@ func (ws *WebsiteScanner) Start() {
 
 	c.Async = false
 	c.AllowedDomains = ws.options.Domains
-	if len(c.AllowedDomains) == 0 {
-		c.AllowedDomains = []string{ws.options.URL}
+
+	domain := ws.getDomain(ws.options.URL)
+	if !utils.Contains(c.AllowedDomains, domain) && !utils.IsEmpty(domain) {
+		c.AllowedDomains = append(c.AllowedDomains, domain)
 	}
+
 	c.AllowURLRevisit = false
 	c.MaxBodySize = ws.options.MaxBodySize
 
@@ -113,6 +127,7 @@ func (ws *WebsiteScanner) Start() {
 	}
 
 	var current *WebsitePage
+	codes := make(map[int]int)
 
 	trace := &httptrace.ClientTrace{
 		DNSStart: func(dsi httptrace.DNSStartInfo) { dns = time.Now() },
@@ -168,9 +183,17 @@ func (ws *WebsiteScanner) Start() {
 
 	c.OnResponse(func(response *colly.Response) {
 
+		codes[response.StatusCode] = codes[response.StatusCode] + 1
+
 		if current != nil {
 			current.Time.Download = time.Since(firstByte)
 			current.StatusCode = response.StatusCode
+			current.Length = len(response.Body)
+
+			contentType := response.Headers.Get("Content-Type")
+			if !utils.IsEmpty(contentType) {
+				current.Type = contentType
+			}
 
 			if current.Parent != nil {
 				current.Parent.Children = append(current.Parent.Children, current)
@@ -196,6 +219,8 @@ func (ws *WebsiteScanner) Start() {
 
 		c.RedirectHandler = func(req *http.Request, via []*http.Request) error {
 
+			codes[req.Response.StatusCode] = codes[req.Response.StatusCode] + 1
+
 			if current != nil {
 				current.Time.Download = time.Since(firstByte)
 				current.StatusCode = req.Response.StatusCode
@@ -217,34 +242,107 @@ func (ws *WebsiteScanner) Start() {
 		}
 	}
 
-	skipErrors := []interface{}{colly.ErrAlreadyVisited, colly.ErrMaxDepth, colly.ErrMissingURL}
+	skipErrors := []interface{}{colly.ErrAlreadyVisited, colly.ErrMaxDepth, colly.ErrMissingURL, colly.ErrForbiddenDomain}
 
-	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
+	if ws.options.Links {
 
-		link := e.Attr("href")
+		c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 
-		scannerLog.Debug("link: %s", link)
+			link := e.Attr("href")
+			if !utils.IsEmpty(link) {
 
-		needToVisit := true
+				scannerLog.Debug("link: %s", link)
 
-		if current != nil {
-			needToVisit = !utils.Contains(current.Links, link)
-			if needToVisit {
-				current.Links = append(current.Links, link)
-			}
-		}
-
-		if needToVisit {
-			if err := e.Request.Visit(link); err != nil {
-
-				if err == colly.ErrAlreadyVisited {
-					//	scannerLog.Debug("already visited")
-				} else if !utils.Contains(skipErrors, err) {
-					//scannerLog.Error(err)
+				if current != nil && !utils.Contains(current.Links, link) {
+					current.Links = append(current.Links, link)
 				}
+
+				old := current
+				if err := e.Request.Visit(link); err != nil {
+
+					if !utils.Contains(skipErrors, err) {
+						scannerLog.Error(err)
+					}
+				}
+				current = old
 			}
-		}
-	})
+		})
+	}
+
+	if ws.options.Images {
+
+		c.OnHTML("img[src]", func(e *colly.HTMLElement) {
+
+			image := e.Attr("src")
+			if !utils.IsEmpty(image) {
+
+				scannerLog.Debug("image: %s", image)
+
+				if current != nil && !utils.Contains(current.Images, image) {
+					current.Images = append(current.Images, image)
+				}
+
+				old := current
+				if err := e.Request.Visit(image); err != nil {
+
+					if !utils.Contains(skipErrors, err) {
+						scannerLog.Error(err)
+					}
+				}
+				current = old
+			}
+		})
+	}
+
+	if ws.options.Scripts {
+
+		c.OnHTML("script[src]", func(e *colly.HTMLElement) {
+
+			script := e.Attr("src")
+			if !utils.IsEmpty(script) {
+
+				scannerLog.Debug("script: %s", script)
+
+				if current != nil && !utils.Contains(current.Scripts, script) {
+					current.Scripts = append(current.Scripts, script)
+				}
+
+				old := current
+				if err := e.Request.Visit(script); err != nil {
+
+					if !utils.Contains(skipErrors, err) {
+						scannerLog.Error(err)
+					}
+				}
+				current = old
+			}
+		})
+	}
+
+	if ws.options.Styles {
+
+		c.OnHTML("link[rel='stylesheet']", func(e *colly.HTMLElement) {
+
+			style := e.Attr("href")
+			if !utils.IsEmpty(style) {
+
+				scannerLog.Debug("style: %s", style)
+
+				if current != nil && !utils.Contains(current.Styles, style) {
+					current.Styles = append(current.Styles, style)
+				}
+
+				old := current
+				if err := e.Request.Visit(style); err != nil {
+
+					if !utils.Contains(skipErrors, err) {
+						scannerLog.Error(err)
+					}
+				}
+				current = old
+			}
+		})
+	}
 
 	c.OnError(func(r *colly.Response, err error) {
 		scannerLog.Error(err)
@@ -252,6 +350,9 @@ func (ws *WebsiteScanner) Start() {
 
 	c.OnScraped(func(r *colly.Response) {
 
+		if current != nil && ws.options.Emails {
+			parseEmails(r.Body, &current.Emails)
+		}
 	})
 
 	if err := c.Visit(ws.options.URL); err != nil {
@@ -262,7 +363,8 @@ func (ws *WebsiteScanner) Start() {
 
 		output := strings.ToLower(ws.options.Output)
 		result := WebsiteScannerResult{
-			Root: ws.page,
+			Root:        ws.page,
+			StatusCodes: codes,
 		}
 		var b []byte
 

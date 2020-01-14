@@ -5,9 +5,14 @@ type WebsiteScanner interface {
 }
 
 type WebsiteOptions struct {
-	URL         string
-	Silent      bool
+	URL string
+	//Silent      bool
 	Redirects   bool
+	Links       bool
+	Images      bool
+	Scripts     bool
+	Styles      bool
+	Emails      bool
 	Domains     []string
 	Output      string
 	MaxDepth    int

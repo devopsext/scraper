@@ -15,11 +15,16 @@ var websiteLog = utils.GetLog()
 
 var websiteOpts = common.WebsiteOptions{
 
-	URL:         websiteEnv.Get("SCRAPER_WEBSITE_URL", "").(string),
-	Silent:      websiteEnv.Get("SCRAPER_WEBSITE_SILENT", false).(bool),
+	URL: websiteEnv.Get("SCRAPER_WEBSITE_URL", "").(string),
+	//Silent:      websiteEnv.Get("SCRAPER_WEBSITE_SILENT", false).(bool),
 	Redirects:   websiteEnv.Get("SCRAPER_WEBSITE_REDIRECTS", false).(bool),
-	Domains:     strings.Split(websiteEnv.Get("SCRAPER_WEBSITE_DOMAINS", "ya.ru").(string), ","),
-	Output:      websiteEnv.Get("SCRAPER_WEBSITE_OUTPUT", "json").(string),
+	Links:       websiteEnv.Get("SCRAPER_WEBSITE_LINKS", false).(bool),
+	Images:      websiteEnv.Get("SCRAPER_WEBSITE_IMAGES", false).(bool),
+	Scripts:     websiteEnv.Get("SCRAPER_WEBSITE_SCRIPTS", false).(bool),
+	Styles:      websiteEnv.Get("SCRAPER_WEBSITE_STYLES", false).(bool),
+	Emails:      websiteEnv.Get("SCRAPER_WEBSITE_EMAILS", false).(bool),
+	Domains:     strings.Split(websiteEnv.Get("SCRAPER_WEBSITE_DOMAINS", "").(string), ","),
+	Output:      websiteEnv.Get("SCRAPER_WEBSITE_OUTPUT", "").(string),
 	MaxDepth:    websiteEnv.Get("SCRAPER_WEBSITE_MAX_DEPTH", 1).(int),
 	UserAgent:   websiteEnv.Get("SCRAPER_WEBSITE_USER_AGENT", "").(string),
 	Insecure:    websiteEnv.Get("SCRAPER_WEBSITE_INSECURE", false).(bool),
@@ -47,8 +52,13 @@ func GetWebsiteCmd() *cobra.Command {
 	flags := rootCmd.PersistentFlags()
 
 	flags.StringVar(&websiteOpts.URL, "url", websiteOpts.URL, "Website url")
-	flags.BoolVar(&websiteOpts.Silent, "silent", websiteOpts.Silent, "Website silency")
+	//flags.BoolVar(&websiteOpts.Silent, "silent", websiteOpts.Silent, "Website silency")
 	flags.BoolVar(&websiteOpts.Redirects, "redirects", websiteOpts.Redirects, "Website follow redirects")
+	flags.BoolVar(&websiteOpts.Links, "links", websiteOpts.Links, "Website scrape links")
+	flags.BoolVar(&websiteOpts.Images, "images", websiteOpts.Images, "Website scrape images")
+	flags.BoolVar(&websiteOpts.Scripts, "scripts", websiteOpts.Scripts, "Website scrape scripts")
+	flags.BoolVar(&websiteOpts.Styles, "styles", websiteOpts.Styles, "Website scrape styles")
+	flags.BoolVar(&websiteOpts.Emails, "emails", websiteOpts.Emails, "Website scrape emails")
 	flags.StringSliceVar(&websiteOpts.Domains, "domains", websiteOpts.Domains, "Website domains")
 	flags.StringVar(&websiteOpts.Output, "output", websiteOpts.Output, "Website output: json, yaml")
 	flags.IntVar(&websiteOpts.MaxDepth, "max-depth", websiteOpts.MaxDepth, "Website max depth")
