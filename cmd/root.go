@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Version of the app
 var VERSION = "unknown"
 
 var rootLog = utils.GetLog()
