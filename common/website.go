@@ -5,8 +5,7 @@ type WebsiteScanner interface {
 }
 
 type WebsiteOptions struct {
-	URL string
-	//Silent      bool
+	URL         string
 	Redirects   bool
 	Links       bool
 	Images      bool

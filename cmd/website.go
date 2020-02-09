@@ -15,8 +15,7 @@ var websiteLog = utils.GetLog()
 
 var websiteOpts = common.WebsiteOptions{
 
-	URL: websiteEnv.Get("SCRAPER_WEBSITE_URL", "").(string),
-	//Silent:      websiteEnv.Get("SCRAPER_WEBSITE_SILENT", false).(bool),
+	URL:         websiteEnv.Get("SCRAPER_WEBSITE_URL", "").(string),
 	Redirects:   websiteEnv.Get("SCRAPER_WEBSITE_REDIRECTS", false).(bool),
 	Links:       websiteEnv.Get("SCRAPER_WEBSITE_LINKS", false).(bool),
 	Images:      websiteEnv.Get("SCRAPER_WEBSITE_IMAGES", false).(bool),
@@ -52,7 +51,6 @@ func GetWebsiteCmd() *cobra.Command {
 	flags := rootCmd.PersistentFlags()
 
 	flags.StringVar(&websiteOpts.URL, "url", websiteOpts.URL, "Website url")
-	//flags.BoolVar(&websiteOpts.Silent, "silent", websiteOpts.Silent, "Website silency")
 	flags.BoolVar(&websiteOpts.Redirects, "redirects", websiteOpts.Redirects, "Website follow redirects")
 	flags.BoolVar(&websiteOpts.Links, "links", websiteOpts.Links, "Website scrape links")
 	flags.BoolVar(&websiteOpts.Images, "images", websiteOpts.Images, "Website scrape images")
